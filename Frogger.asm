@@ -2,11 +2,10 @@ BITS 16
 
         
 section .data
-        msg DB 10,13,'Ha ganado! Jugar de nuevo? (y/n)$'
+        msg DB 10,13,'Ha ganado!$'
         x_frog: dw 120   ; Coordenada x
-        y_frog: dw 180   ; Coordenada y
+        y_frog: dw 180  ; Coordenada y
         tam_frog: dw 04h  ;tamaño de frog
-        tiempo: dw 00h
 
         
 _start:
@@ -22,7 +21,6 @@ _start:
         call print  ; Llamada para dibujar en la pantalla
 
         loop1:        
-
             call set_pantalla
             call print  ; Llamada para dibujar en la pantalla
             call get_input
@@ -33,7 +31,7 @@ _start:
 
 get_input:
 
-            mov Ah, 0
+            mov Ah, 0 ; Settea la interrupcion para optener entradas del teclado.
             int 16h
 
             cmp al, 'w'
@@ -50,35 +48,38 @@ get_input:
             
             ret
         
-mover_arriba:    
+mover_arriba:    ; Frogger avanza hacia arriba.
         sub dword [y_frog], 5h
-        cmp dword [y_frog], 65
-        jl gane
+        mov cx, [y_frog]
+        cmp cx, 65
+        je gane
         call print  ; Llamada para dibujar en la pantalla 
         ret
             
-mover_abajo:    
+mover_abajo:    ; Frogger avanza hacia abajo.
         add dword [y_frog], 5h
         call print  ; Llamada para dibujar en la pantalla
         ret
         
- mover_izq:    
+ mover_izq:    ; Frogger avanza hacia izquierda.
         sub dword [x_frog], 5h
         call print  ; Llamada para dibujar en la pantalla 
         ret
             
-mover_der:    
+mover_der:    ; Frogger avanza hacia derecha.
         add dword [x_frog], 5h
         call print  ; Llamada para dibujar en la pantalla
         ret       
 
-gane:
+gane: ; Parte del codigo para imprimir fue tomado de https://gist.github.com/RedToor/f45a25a196dbb22a385437c415777bb9
+
+        add dword [y_frog], 115
 
         XOR AX,AX              ; AX=0
         MOV AL,03h             ; Modo de texto 80x25x16
         INT 10h                ; Llamamos a la INT 10h
 
-        LEA SI,msg       ; Cargamos en SI la dirección de memoria efectiva de la constante
+        LEA SI,msg              ; Cargamos en SI la dirección de memoria efectiva de la constante
         CALL escribir_cadena   ; Llamamos a la función de escribir la variable en pantalla
 
         INT 16h                ; Pedimos una tecla (AH=0)
@@ -102,29 +103,14 @@ gane:
             POP SI                 ; Liberamos los registros SI y AX de la pila
             POP AX                 ;
             
-             
-       confirmacion:
-       
-            mov dword [y_frog], 180
-            mov dword [x_frog], 120
-            
-            mov Ah, 0
-            int 16h
+            wait1: ; Espera hasta que el usuario pulse espacio para reiniciar.
+                mov Ah, 0
+                int 16h
 
-            cmp al, 'y'
-            je _start
-        
-            cmp al, 'n'
-            je salir
-            
-            jmp confirmacion
-         
-salir:
-        xor bx,bx	;Clearing out ebx [Ebx contains error code 0 for normal exit]
- 	xor ax,ax	;Clearing out eax 
-	mov al,0x1	;exit sys call no. in eax
-	int 0x80	;Interrupt for syscall
-
+                cmp al, ' '
+                jne wait1
+                
+            call _start                    ; Inicia el programa de nuevo.
              
 espera:
         mov al, 0    ; Coloca el valor de al en 0
@@ -147,7 +133,6 @@ set_pantalla:
         ret             
                                          
 print:
-
         mov cx, 5
         mov dx, 160
         
